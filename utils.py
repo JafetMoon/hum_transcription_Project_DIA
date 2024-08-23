@@ -15,20 +15,32 @@ def nota_a_cifrado(nota):
     return f"{cifrado}{octava}"
 
 
-def analizar_archivo(path):
+def analizar_archivo(midi):
+    """
+    Analiza un archivo MIDI para obtener información sobre las notas.
 
-    midi = mido.MidiFile(path)
+    Args:
+        midi: Objeto MidiFile cargado con la librería MIDO.
+
+    Returns:
+        Tuple (freq_liminf, freq_limsup, cifrado_liminf, cifrado_limsup):
+        - freq_liminf: Frecuencia (Hz) de la nota más baja.
+        - freq_limsup: Frecuencia (Hz) de la nota más alta.
+        - cifrado_liminf: Cifrado (nombre de nota) de la nota más baja.
+        - cifrado_limsup: Cifrado (nombre de nota) de la nota más alta.
+    """
     nota_liminf = float('inf')
     nota_limsup = float('-inf')
     notas_conteo = [0] * 128
+    tiempo_min = float('inf')
 
     for track in midi.tracks:
         for msg in track:
-            # velocity > 0 para no contar fin de ejecución
             if msg.type == 'set_tempo':
                 tempo_ms = msg.tempo
             
-            if msg.type == 'note_on' and msg.velocity > 0:
+            # Frecuencia y nota mínima
+            if msg.type == 'note_on' and msg.velocity > 0: # velocity > 0 para no contar fin de ejecución
                 nota = msg.note
                 notas_conteo[nota] += 1
 
@@ -37,12 +49,31 @@ def analizar_archivo(path):
                 if nota > nota_limsup:
                     nota_limsup = nota
 
+            # Tiempo mínimo de nota
+            if msg.type == 'note_off' and msg.velocity == 0: # velocity = 0 para encontrar errores en el estándar
+                if msg.time < tiempo_min:
+                    tiempo_min = msg.time # [segs]
+
+    # Mínima figura musical
+    # tempo_ms
+    quanta2figure = {1: 'redonda',
+                    1/2: 'blanca',
+                    1/4: 'negra',
+                    1/8: 'corchea',
+                    1/16: 'semicorchea',
+                    1/32: 'fusa',
+                    1/64: 'semifusa'}
+    tempo_secs = tempo_ms / 10**6
+
+    beat_quanta_min = tiempo_min / tempo_secs
+    note_fig_min =  quanta2figure.get(beat_quanta_min, 0)
+
     freq_liminf = nota_a_frequencia(nota_liminf)
     freq_limsup = nota_a_frequencia(nota_limsup)
     cifrado_liming = nota_a_cifrado(nota_liminf)
     cifrado_limsup = nota_a_cifrado(nota_limsup)
     
-    return (tempo_ms, nota_liminf, nota_limsup, freq_liminf, freq_limsup, cifrado_liming, cifrado_limsup, notas_conteo)
+    return (tempo_ms, tiempo_min, beat_quanta_min, nota_liminf, nota_limsup, freq_liminf, freq_limsup, cifrado_liming, cifrado_limsup), notas_conteo
 
 
 
@@ -71,13 +102,16 @@ def procesar_midis(path_carpeta):
     data_notas = []
     for filename in os.listdir(path_carpeta):
         path_archivo = os.path.join(path_carpeta, filename)
+        midi = mido.MidiFile(path_archivo)
+
         info_archivo = extraer_info(filename)
-        info_nota = analizar_archivo(path_archivo)
-        data_archivo.append(info_archivo + list(info_nota[:-1]))
-        data_notas.append([info_archivo[0]] + info_nota[-1])
+        info_bounds, info_nota = analizar_archivo(midi)
+        data_archivo.append(info_archivo + list(info_bounds))
+        data_notas.append([info_archivo[0]] + info_nota)
 
     columns_notas = ['key'] + [f'{i} ({nota_a_cifrado(i)})' for i in range(128)]
-    columns = ['key', 'Genero', 'PersonID', 'MusicID', 'SegmentID', 'RepetitionID', 'MetaID', 'tempo_ms',
+    columns = ['key', 'Genero', 'PersonID', 'MusicID', 'SegmentID', 'RepetitionID', 'MetaID', 
+               'tempo_ms', 'min_time', 'min_figure',
                'LimInf_Nota', 'LimSup_Nota',
                'LimInf_Freq', 'LimSupFreq',
                'LimInf_Cifrado', 'LimSup_Cifrado']
