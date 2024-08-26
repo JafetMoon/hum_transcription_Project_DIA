@@ -52,17 +52,17 @@ def analizar_archivo(midi):
             # Tiempo mínimo de nota
             if msg.type == 'note_off' and msg.velocity == 0: # velocity = 0 para encontrar errores en el estándar
                 if msg.time < tiempo_min:
-                    tiempo_min = msg.time # [segs]
+                    tiempo_min = mido.tick2second(msg.time, midi.ticks_per_beat, tempo_ms)  # [segs]
 
     # Mínima figura musical
     # tempo_ms
-    quanta2figure = {1: 'redonda',
-                    1/2: 'blanca',
-                    1/4: 'negra',
-                    1/8: 'corchea',
-                    1/16: 'semicorchea',
-                    1/32: 'fusa',
-                    1/64: 'semifusa'}
+    quanta2figure = {4: 'redonda',
+                    2: 'blanca',
+                    1: 'negra',
+                    1/2: 'corchea',
+                    1/4: 'semicorchea',
+                    1/8: 'fusa',
+                    1/16: 'semifusa'}
     tempo_secs = tempo_ms / 10**6
 
     beat_quanta_min = tiempo_min / tempo_secs
@@ -73,7 +73,7 @@ def analizar_archivo(midi):
     cifrado_liming = nota_a_cifrado(nota_liminf)
     cifrado_limsup = nota_a_cifrado(nota_limsup)
     
-    return (tempo_ms, tiempo_min, beat_quanta_min, nota_liminf, nota_limsup, freq_liminf, freq_limsup, cifrado_liming, cifrado_limsup), notas_conteo
+    return (tempo_ms, tiempo_min, note_fig_min, nota_liminf, nota_limsup, freq_liminf, freq_limsup, cifrado_liming, cifrado_limsup), notas_conteo
 
 
 
@@ -112,9 +112,9 @@ def procesar_midis(path_carpeta):
     columns_notas = ['key'] + [f'{i} ({nota_a_cifrado(i)})' for i in range(128)]
     columns = ['key', 'Genero', 'PersonID', 'MusicID', 'SegmentID', 'RepetitionID', 'MetaID', 
                'tempo_ms', 'min_time', 'min_figure',
-               'LimInf_Nota', 'LimSup_Nota',
-               'LimInf_Freq', 'LimSupFreq',
-               'LimInf_Cifrado', 'LimSup_Cifrado']
+               'min_nota', 'max_nota',
+               'min_freq', 'max_freq',
+               'min_cifrado', 'max_cifrado']
     df_archivo = pd.DataFrame(data_archivo, columns=columns)
     df_notas = pd.DataFrame(data_notas, columns=columns_notas)
     return df_archivo, df_notas

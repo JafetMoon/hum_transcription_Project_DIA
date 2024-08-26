@@ -65,3 +65,33 @@ def process_midi_files(folder_path, L):
             
     return all_sequences
 
+
+### Midi analysis
+
+# Detecta MIDIs con "note_on" consecutivos en lugar de "note_on/note_off"
+def detect_note_on_consecutives(midi):
+    for track in midi.tracks:
+        previous_note_on = None
+
+        for msg in track:
+            if msg.type == 'note_on' and previous_note_on:
+                if msg.velocity == 0:
+                    return True
+            previous_note_on = msg if msg.type == 'note_on' else None
+
+    return False
+
+# Entrega características de la primer nota ejecutada
+def first_note_data(midi):
+    previous_msg = None
+    tempo = None
+
+    for msg in midi:
+        # Guarda el tempo de la pista
+        # Siempre se define antes que las notas, no habrá problema.
+        if msg.type == 'set_tempo':
+            tempo = msg.tempo
+
+        if (msg.type == 'note_on') and (previous_msg not in ['note_on', 'note_in']):
+            return (msg.note, tempo, msg.velocity, msg.time) 
+
