@@ -43,6 +43,7 @@ def save_spectrogram(file_path, spectrogram_db, sr, hop_length):
 
 
 ##### 4 
+# Función para extraer los onsets del archivo de audio
 def extract_audio_onsets(audio_path):
     # Cargar el archivo de audio
     y, sr = librosa.load(audio_path)

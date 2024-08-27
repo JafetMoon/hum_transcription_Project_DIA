@@ -94,4 +94,77 @@ def first_note_data(midi):
 
         if (msg.type == 'note_on') and (previous_msg not in ['note_on', 'note_in']):
             return (msg.note, tempo, msg.velocity, msg.time) 
+        
 
+### Midi transformation
+def lstrip(midi):
+    """
+    Recorta el tiempo muerto antes de la primera nota en un archivo MIDI. 
+    El recorte se hace "in place", es decir, el objeto original se modifica.
+    
+    Parámetros:
+        midi (MidiFile): Ruta al archivo MIDI.
+    
+    Retorna:
+        midi (MidiFile): Archivo MIDI modificado sin tiempo muerto al inicio.
+    """
+    
+    # Recorrer las pistas y eventos del MIDI para eliminar el tiempo muerto al inicio
+    for track in midi.tracks:
+        total_time = 0
+        for i, msg in enumerate(track):
+            total_time += msg.time
+            # Detectar el primer mensaje de 'note_on'
+            if msg.type == 'note_on' and msg.time > 0:
+                # Reducir el tiempo al primer 'note_on' a cero
+                track[i].time = 0
+                break
+    
+    return midi
+
+
+def trim(midi, tempo, T):
+    """
+    Recorta el archivo MIDI a T segundos, eliminando cualquier nota sonando en el corte.
+    
+    Parámetros:
+        midi (MidiFile): Archivo MIDI a recortar
+        tempo (micro segundos): tiempo por negra (beat) en microsegundos
+        T (float): Duración máxima en segundos del archivo MIDI.
+    
+    Retorna:
+        new_midi (MidiFile): Archivo MIDI modificado con una duración máxima de T segundos.
+    """
+    
+    
+    # Convertir la duración T a ticks (tiempo del MIDI)
+    ticks_per_beat = midi.ticks_per_beat
+    ticks_per_second = ticks_per_beat * 1e6 / tempo
+    max_ticks = int(T * ticks_per_second)
+
+    # Crea el midi de salida
+    new_midi = mido.MidiFile(ticks_per_beat=ticks_per_beat)
+    
+    for track in midi.tracks:
+        total_ticks = 0
+        new_track = mido.MidiTrack()
+        new_midi.tracks.append(new_track) 
+
+        for msg in track:
+            if msg.type == 'note_on' or msg.type == 'note_off':
+                total_ticks += msg.time
+                # print('time: ', msg.time, ' total_time: ', total_ticks)
+
+            # Si está entro del rango de tiempo permitido, se agrega el mensaje
+            if (total_ticks <= max_ticks) and (msg.type != 'end_of_track'):
+                new_track.append(msg)
+                last_msg = msg
+            else:
+                continue
+        
+        # Elimina notas iniciadas sin duración
+        # Una nota completa empieza con note_on y termina con note_off
+        if last_msg.type == 'note_on':
+            new_track.pop()
+
+    return new_midi

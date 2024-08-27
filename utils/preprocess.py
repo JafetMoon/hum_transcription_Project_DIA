@@ -72,8 +72,9 @@ def analizar_archivo(midi):
     freq_limsup = nota_a_frequencia(nota_limsup)
     cifrado_liming = nota_a_cifrado(nota_liminf)
     cifrado_limsup = nota_a_cifrado(nota_limsup)
+    duration = midi.length
     
-    return (tempo_ms, tiempo_min, note_fig_min, nota_liminf, nota_limsup, freq_liminf, freq_limsup, cifrado_liming, cifrado_limsup), notas_conteo
+    return (duration, tempo_ms, tiempo_min, note_fig_min, nota_liminf, nota_limsup, freq_liminf, freq_limsup, cifrado_liming, cifrado_limsup), notas_conteo
 
 
 
@@ -111,7 +112,7 @@ def procesar_midis(path_carpeta):
 
     columns_notas = ['key'] + [f'{i} ({nota_a_cifrado(i)})' for i in range(128)]
     columns = ['key', 'Genero', 'PersonID', 'MusicID', 'SegmentID', 'RepetitionID', 'MetaID', 
-               'tempo_ms', 'min_time', 'min_figure',
+               'duration', 'tempo_ms', 'min_time', 'min_figure',
                'min_nota', 'max_nota',
                'min_freq', 'max_freq',
                'min_cifrado', 'max_cifrado']
