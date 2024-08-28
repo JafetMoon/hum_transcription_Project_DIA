@@ -66,8 +66,7 @@ def process_midi_files(folder_path, L):
     return all_sequences
 
 
-### Midi analysis
-
+###### Midi analysis ###############
 # Detecta MIDIs con "note_on" consecutivos en lugar de "note_on/note_off"
 def detect_note_on_consecutives(midi):
     for track in midi.tracks:
@@ -96,7 +95,7 @@ def first_note_data(midi):
             return (msg.note, tempo, msg.velocity, msg.time) 
         
 
-### Midi transformation
+###### Midi transformation ###############
 def lstrip(midi):
     """
     Recorta el tiempo muerto antes de la primera nota en un archivo MIDI. 
