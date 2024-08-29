@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import librosa.display
 
 
-def trim(audio, sr, T_midi, T_audio=None):
+def trim(audio, sr, T_midi, top_db=60):
     """
     Recorta un audio eliminando partes en silencio al inicio y final,
     y luego lo corta a la duración de T_midi.
@@ -14,13 +14,13 @@ def trim(audio, sr, T_midi, T_audio=None):
         audio (np.ndarray): Array de audio cargado con librosa.
         sr (int): Frecuencia de muestreo del audio.
         T_midi (float): Duración del MIDI equivalente transformado que funciona como plantilla.
-        T_audio (float): Duración del audio de entrada.
+        top_db (float): Umbral de Decibeles debajo del cual se considera silencio.
     
     Retorna:
         audio_recortado (np.ndarray): Audio recortado a la duración de T_midi.
     """
     # Eliminar partes en silencio al inicio y final
-    audio_trimmed, _ = librosa.effects.trim(audio, top_db=50) # top_db 2 desviaciones
+    audio_trimmed, _ = librosa.effects.trim(audio, top_db=top_db) # top_db 2 desviaciones
     # Calcular la cantidad de muestras correspondiente a T_midi
     max_samples = int(np.ceil(T_midi * sr))
     # Recortar el audio a T_midi
